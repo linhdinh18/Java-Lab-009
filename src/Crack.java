@@ -1,5 +1,10 @@
+/**
+ * @author Trevor Hartman
+ * @author Linh Dinh
+ *
+ * @since version 1.0
+ */
 import org.apache.commons.codec.digest.Crypt;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -20,6 +25,21 @@ public class Crack {
     }
 
     public void crack() throws FileNotFoundException {
+        FileInputStream fileStream = new FileInputStream(this.dictionary);
+        Scanner scanner = new Scanner(fileStream);
+        while (scanner.hasNextLine()) {
+            String word = scanner.nextLine();
+            for (User user : this.users) {
+                String passHash = user.getPassHash();
+                if (passHash.contains("$")) {
+                    String hash = Crypt.crypt(word, user.getPassHash());
+                    if (hash.equals(passHash)){
+                        System.out.println("Found password " + word + " for user " + user.getUsername());
+                    }
+                }
+            }
+        }
+        scanner.close();
     }
 
     public static int getLineCount(String path) {
@@ -31,6 +51,23 @@ public class Crack {
     }
 
     public static User[] parseShadow(String shadowFile) throws FileNotFoundException {
+        int numLines = getLineCount(shadowFile);
+        User[] users = new User[numLines];
+        FileInputStream fileStream = new FileInputStream(shadowFile);
+        Scanner scanner = new Scanner(fileStream);
+        int i = 0;
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            String[] element = line.split(":");
+            String username = element[0];
+            String passHash = element[1];
+            User user = new User(username, passHash);
+            users[i] = user;
+            i++;
+        }
+        scanner.close();
+        return users;
+
     }
 
     public static void main(String[] args) throws FileNotFoundException {
@@ -39,7 +76,6 @@ public class Crack {
         String shadowPath = sc.nextLine();
         System.out.print("Type the path to your dictionary file: ");
         String dictPath = sc.nextLine();
-
         Crack c = new Crack(shadowPath, dictPath);
         c.crack();
     }
